@@ -2,12 +2,17 @@ package main
 
 import (
 	"fmt"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
+	"os"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func main() {
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "[ERROR] %s", err)
+	}
 	defer conn.Close()
 
 	ch, err := conn.Channel()
@@ -15,14 +20,15 @@ func main() {
 
 	// Function to dynamically declare and consume from a new queue
 	consumeFromQueue := func(queueName string) {
-		q, err := ch.QueueDeclare(
-		// ....
-		)
+		q, err := ch.QueueDeclare("", false, false, true, false, nil)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "[ERROR] %s", err)
+		}
 
-		msgs, err := ch.Consume(
-			q.Name, // queue
-			// ...
-		)
+		msgs, err := ch.Consume(q.Name, "consumer", true, false, false, false, nil)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "[ERROR] %s", err)
+		}
 
 		go func() {
 			for d := range msgs { // storing extra memory here with this "permanent" goroutine
